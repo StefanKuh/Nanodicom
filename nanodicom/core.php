@@ -395,7 +395,7 @@ abstract class Nanodicom_Core {
 		// Search in children
 		foreach ($this->_children as $child_name => $child_class)
 		{
-			if (method_exists($child_class, $name) AND is_callable(array($child_class, $name), TRUE))
+			if (is_callable(array($child_class, $name), TRUE) AND method_exists($child_class, $name))
 			{
 				// Method found.
 				return call_user_func_array(array($child_class, $name), $args);
