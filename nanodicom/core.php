@@ -56,7 +56,7 @@ abstract class Nanodicom_Core {
 	 * @var  array  item elements
 	 */
 	public static $items_elements = array(self::ITEM, self::ITEM_DELIMITER, self::SEQUENCE_DELIMITER);
-	
+
 	/**
 	 * @var  array  default dictionary
 	 */
@@ -114,9 +114,9 @@ abstract class Nanodicom_Core {
 		'US' => array('Unsigned Short', 2, 1),
 		'UT' => array('Unlimited Text', 4294967294, 0)
 	);
-	
+
 	/**
-	 * Create a new Nanodicom instance. It is usually called from a class extended 
+	 * Create a new Nanodicom instance. It is usually called from a class extended
 	 * from Nanodicom, ie Dumper
 	 *
 	 *     $dicom_object = Nanodicom::factory($location, 'dumper');
@@ -138,9 +138,9 @@ abstract class Nanodicom_Core {
 	{
 		// Get the parts from the name
 		$parts = explode('_', $name);
-		
+
 		$directory = NANODICOMROOT.'tools'.DIRECTORY_SEPARATOR;
-		
+
 		// Load all the needed files
 		foreach ($parts as $part)
 		{
@@ -182,19 +182,19 @@ abstract class Nanodicom_Core {
 
 	// Define which function to read integers based on size of integer
 	protected static $_read_int  = '_read_int_32';
-	
+
 	// Define which function to write integers based on size of integer
 	protected static $_write_int = '_write_int_32';
 
 	// In case a string was given for vr list, we force to load dictionaries
 	protected $_force_load_dictionary = FALSE;
-	
+
 	// Array of DICOM elements indexed by group and element index. The dataset
 	protected $_dataset = array();
-	
+
 	// Flag indicating if file has DICOM preamble or not. TRUE => DICM, FALSE => Anything else (NEMA?)
 	public $has_dicom_preamble = FALSE;
-	
+
 	// Holds the performance times
 	public $profiler = array();
 
@@ -215,7 +215,7 @@ abstract class Nanodicom_Core {
 
 	// Flag to know if file has been parsed
 	protected $_is_parsed = FALSE;
-	
+
 	// Preamble
 	protected $_preamble;
 
@@ -224,7 +224,7 @@ abstract class Nanodicom_Core {
 
 	// Metagroup last byte
 	protected $_meta_group_last_byte = -1;
-	
+
 	// Length of the file or blob
 	protected $_file_length;
 
@@ -236,34 +236,34 @@ abstract class Nanodicom_Core {
 
 	// In case we want to read only certain fields
 	protected $_vr_reading_list = array();
-	
+
 	// Transfer Syntax. Defaults to Implicit Little Endian
 	protected $_transfer_syntax = self::IMPLICIT_VR_LITTLE_ENDIAN;
-	
+
 	// Stores the blob
 	protected $_blob = '';
 
 	// For extending the class to use other tools
 	protected $_children;
-	
+
 	// To let the Item know if the data is a Data Set or direct data
 	protected $_parent_vr;
-	
+
 	// Number of parsed elements
 	protected $_counted_elements = 0;
 
 	// Flag to know if Group 8 has been found
 	protected $_found_group_8 = FALSE;
-	
+
 	// Callback to check if we need to stop after certain tags are read
 	protected $_check_list_function = '_dummy';
-	
+
 	// Callback to check deflate
 	protected $_check_deflate_function = '_check_deflate';
 
 	// Callback to check proper endian
 	protected $_check_proper_endian_function = '_check_proper_endian';
-	
+
 	// Number of retries to read oversized lenghts
 	protected $_oversize_retries = 0;
 
@@ -288,7 +288,7 @@ abstract class Nanodicom_Core {
 
 		self::$_read_int = (PHP_INT_SIZE > 4) ? '_read_int_64' : '_read_int_32';
 		self::$_write_int = (PHP_INT_SIZE > 4) ? '_write_int_64' : '_write_int_32';
-		
+
 		if ($type == 'file')
 		{
 			// It is a file
@@ -303,7 +303,7 @@ abstract class Nanodicom_Core {
 
 		// To prevent the extension of loaded tool
 		$this->_children[$name] = TRUE;
-		
+
 		// Determine if we are running in a command line environment
 		self::$is_cli = (PHP_SAPI === 'cli');
 
@@ -352,7 +352,7 @@ abstract class Nanodicom_Core {
 			list($group, $element) = Nanodicom_Dictionary::$dict_by_name[$name];
 			$this->value($group, $element, $value);
 		}
-		
+
 		return $this;
 	}
 
@@ -375,14 +375,14 @@ abstract class Nanodicom_Core {
 			{
 				unset($this->_dataset[$group][$element]);
 			}
-			
+
 			// Update the group length if needed
 			$this->_update_group_length($this->_dataset, $group);
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Magic method to call an undefined method. It will look for methods on children
 	 * Performance is better when called directly
@@ -395,17 +395,17 @@ abstract class Nanodicom_Core {
 		// Search in children
 		foreach ($this->_children as $child_name => $child_class)
 		{
-			if (method_exists($child_class, $name) AND is_callable(array($child_class, $name), TRUE))
+            if (is_callable(array($child_class, $name), TRUE) AND method_exists($child_class, $name))
 			{
 				// Method found.
 				return call_user_func_array(array($child_class, $name), $args);
 			}
 		}
-		
+
 		// Nothing found
 		return FALSE;
 	}
-	
+
 	/**
 	 * Public method to extend the tool to include other tools.
 	 * It is preferable to load the required tool directly. This mechanism is still under
@@ -419,14 +419,14 @@ abstract class Nanodicom_Core {
 	public function extend($name)
 	{
 		// Check if children is already set. Does not extend original loaded extension
-		if (isset($this->_children[$name])) 
+		if (isset($this->_children[$name]))
 			return $this;
-		
+
 		// Attach the instance of the new tool to a child
 		$this->_children[$name] = ($this->_location == 'blob')
 								? self::factory($this->_blob, $name, 'blob')
 								: self::factory($this->_location, $name);
-		
+
 		$this->_children[$name]->_force_load_dictionary			= $this->_force_load_dictionary;
 		$this->_children[$name]->_dataset						= $this->_dataset;
 		$this->_children[$name]->has_dicom_preamble				= $this->has_dicom_preamble;
@@ -447,7 +447,7 @@ abstract class Nanodicom_Core {
 		$this->_children[$name]->_parent_vr						= $this->_parent_vr;
 		$this->_children[$name]->_file_length					= $this->_file_length;
 		$this->_children[$name]->_preamble						= $this->_preamble;
-		
+
 		return $this;
 	}
 
@@ -460,7 +460,7 @@ abstract class Nanodicom_Core {
 	public function profiler_diff($name, $units = 'ms')
 	{
 		$diff = 0;
-		
+
 		// Get the profiling time is exists in current object
 		if (isset($this->profiler[$name]) AND isset($this->profiler[$name]['start']) AND isset($this->profiler[$name]['end']))
 		{
@@ -477,7 +477,7 @@ abstract class Nanodicom_Core {
 				}
 			}
 		}
-		
+
 		switch ($units)
 		{
 			case 'ms':
@@ -501,7 +501,7 @@ abstract class Nanodicom_Core {
 	}
 
 	/**
-	 * Public method to quickly check if file is DICOM. Does a brute force parse of the object and checks the 
+	 * Public method to quickly check if file is DICOM. Does a brute force parse of the object and checks the
 	 * returned status.
 	 *
 	 * @param   boolean  set to TRUE to allow partially read files
@@ -511,11 +511,11 @@ abstract class Nanodicom_Core {
 	{
 		// Parse the file
 		$this->parse();
-		
+
 		if ($allow_partial)
 			// Check for self::PARTIAL as well is allowing partial
 			return (in_array($this->status, array(self::SUCCESS, self::PARTIAL)));
-			
+
 		// Otherwise, check only for success
 		return (self::SUCCESS == $this->status);
 	}
@@ -529,7 +529,7 @@ abstract class Nanodicom_Core {
 	{
 		// Parse the file
 		$this->parse();
-		
+
 		// Return the transfer syntax used
 		return trim($this->_transfer_syntax);
 	}
@@ -558,16 +558,16 @@ abstract class Nanodicom_Core {
 		$this->_parent_vr					  = '';
 		$this->_file_length					  = 0;
 		$this->_check_proper_endian_function  = '_check_proper_endian';
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Public method to get and set values, but only values at top level.
 	 *
 	 * @param   mixed    either the group or name of the tag
 	 * @param   mixed    either the element or value to set of the tag
-	 * @param   mixed    either the value to set or the create 
+	 * @param   mixed    either the value to set or the create
 	 * @param   boolean  for creating/updating values. true for binary, false everything els
 	 * @return  mixed|false|void found value or false when tag was not found or not enough arguments or void when setting a value successfully
 	 */
@@ -592,10 +592,10 @@ abstract class Nanodicom_Core {
 		{
 			unset($this->_dataset[$group][$element]);
 		}
-		
+
 		// Update the group length if needed
 		$this->_update_group_length($this->_dataset, $group);
-		
+
 		return $this;
 	}
 
@@ -611,10 +611,10 @@ abstract class Nanodicom_Core {
 	{
 		if ( isset($array[$index]))
 			return $array[$index];
-		
+
 		return $default;
 	}
-	
+
 	/**
 	 * Public method to get the summary of the given file.
 	 *
@@ -625,29 +625,29 @@ abstract class Nanodicom_Core {
 	{
 		// Parse the file
 		$this->parse();
-		
+
 		$transfer_syntax = trim($this->get(0x0002, 0x0010, 'UN'));
 		$transfer_syntax .= ($transfer_syntax == 'UN' OR ! array_key_exists($transfer_syntax, Nanodicom_Dictionary::$transfer_syntaxes))
 			? ' - Unknow'
 			: ' - Parsed using: '.Nanodicom_Dictionary::$transfer_syntaxes[$transfer_syntax][0];
 			//.'. Parsed using: '.Nanodicom_Dictionary::$transfer_syntaxes[$this->_transfer_syntax][0];
-		
+
 		if ($transfer_syntax == 'UN - Unknow')
 		{
 			$transfer_syntax .= ' [Parsed Using: '.$this->_transfer_syntax.' - '
 				.Nanodicom_Dictionary::$transfer_syntaxes[$this->_transfer_syntax][0].']';
 		}
-		
+
 		// Checking for "rows" since that value should be set for images.
 		$has_images = ($this->get(0x0028, 0x0010, 'N/A') != 'N/A') ? 'YES' : 'NO';
-		
+
 		$statuses = array(
 			'Not parsed yet',
 			'Partially parsed. Some tags were found',
 			'Successfully parsed!',
 			'Failed',
 		);
-		
+
 		$values = array(
 			'Filename:          ' => basename($this->_location),
 			'Transfer Syntax:   ' => $transfer_syntax,
@@ -658,13 +658,13 @@ abstract class Nanodicom_Core {
 			'Patient Name:      ' => $this->get(0x0010, 0x0010, 'N/A'),
 			'Images?            ' => $has_images,
 		);
-		
+
 		$pixel_representation = array(
 			'0' => 'Unsigned Integer. Only positive values allowed.',
 			'1' => '2\'s complement. Negative and positive allowed.',
 			'N/A' => 'Not available',
 		);
-		
+
 		$planar_configuration = array(
 			'0' => 'Color-by-pixel: RGB, RGB, RGB..',
 			'1' => 'Color-by-plane: RRR..., GGG..., BBB...',
@@ -691,7 +691,7 @@ abstract class Nanodicom_Core {
 				'Planar Config:     ' => $this->get(0x0028,0x0006, 'N/A').' - '.Nanodicom::array_get($planar_configuration, $this->get(0x0028,0x0006, 'N/A'), 'Wrong'),
 			);
 		}
-		
+
 		if ($output == 'string')
 		{
 			$output = '';
@@ -699,11 +699,11 @@ abstract class Nanodicom_Core {
 			{
 				$output .= $index."\t".$value."\n";
 			}
-			
+
 			// Set the output back to values
 			$values = $output;
 		}
-		
+
 		return $values;
 	}
 
@@ -722,7 +722,7 @@ abstract class Nanodicom_Core {
 		$dataset = ($dataset !== NULL) ? $dataset : $this->_dataset;
 		// Get the correspoding value
 		$value   = $this->dataset_value($dataset, $group, $element);
-		
+
 		// Return the proper value if correctly set, otherwise the default one
 		return ($value === FALSE OR (is_array($value) AND empty($value))
 			OR (is_string($value) AND trim($value) == '') OR $value === NULL) ? $default : $value;
@@ -738,7 +738,7 @@ abstract class Nanodicom_Core {
 	{
 		$group = 0xFFFE;
 		$element = 0xE000;
-		
+
 		if (isset($dataset[$group][$element]))
 		{
 			$total = count($dataset[$group][$element]);
@@ -770,7 +770,7 @@ abstract class Nanodicom_Core {
 	 * @param   array    a dataset
 	 * @param   mixed    either the group or name of the tag
 	 * @param   mixed    either the element or value to set of the tag
-	 * @param   mixed    either the value to set or the create 
+	 * @param   mixed    either the value to set or the create
 	 * @param	boolean  used for update/create, true for binary, false for anything else
 	 * @return  mixed|false|void found value or false when tag was not found or not enough arguments or void when setting a value successfully
 	 */
@@ -798,7 +798,7 @@ abstract class Nanodicom_Core {
 				// Sorry, no dictionary entry found, cannot read value
 				return FALSE;
 			}
-			
+
 			// Continue with the rest
 		}
 
@@ -815,13 +815,13 @@ abstract class Nanodicom_Core {
 				}
 
 				// It is a dataset, then return it, otherwise, just the value
-				return (count($dataset[$group][$element][0]['ds']) == 0) ? $dataset[$group][$element][0]['val'] 
+				return (count($dataset[$group][$element][0]['ds']) == 0) ? $dataset[$group][$element][0]['val']
 																		 : $dataset[$group][$element][0]['ds'];
 			}
 
 			return FALSE;
 		}
-		
+
 		$original_vr = '';
 
 		// Rest of the code is for setting a value (creation or update)
@@ -843,7 +843,7 @@ abstract class Nanodicom_Core {
 
 		// Grab the vr
 		list($value_representation, $multiplicity, $name) = $this->_decode_vr($group, $element, $original_vr, 0);
-		
+
 		if (is_array($new_value))
 		{
 			// Extract vr and value from array
@@ -861,13 +861,13 @@ abstract class Nanodicom_Core {
 		{
 			$length = self::$vr_array[$value_representation][1];
 		}
-		
+
 		// Set the Transfer Syntax UID if needed
 		if ($group == self::METADATA_GROUP AND $element == 0x0010)
 		{
 			$this->_transfer_syntax = trim($new_value);
 		}
-		
+
 		if (isset($dataset[$group][$element]))
 		{
 			// Update the element
@@ -892,10 +892,10 @@ abstract class Nanodicom_Core {
 
 			$dataset[(int) $group][(int) $element][0] = $value;
 		}
-		
+
 		$this->_update_group_length($dataset, $group);
 		// TODO: Update the length of parent element (SQ or IT)
-		
+
 		unset($group, $element, $new_value);
 	}
 
@@ -927,11 +927,11 @@ abstract class Nanodicom_Core {
 		{
 			$this->load_dictionaries($vr_reading_list);
 		}
-		
+
 		// Do the parse
 		return $this->_parse($check_dicom_preamble);
 	}
-	
+
 	/**
 	 * Writes the file to the specified location
 	 *
@@ -944,7 +944,7 @@ abstract class Nanodicom_Core {
 		file_put_contents($filename, $this->write());
 		return $this;
 	}
-	
+
 	/**
 	 * Force to load dictionaries when parsing when TRUE. Otherwise,
 	 * __get calls won't be able to return the right values.
@@ -957,7 +957,7 @@ abstract class Nanodicom_Core {
 		$this->_force_load_dictionary = $value;
 		return $this;
 	}
-	
+
 	/**
 	 * Returns a blob of the current dataset
 	 * This function will do some corrections:
@@ -976,10 +976,10 @@ abstract class Nanodicom_Core {
 			// But only when the blob is larger than 0, otherwise is considered new file
 			$this->parse();
 		}
-		
+
 		// Profile this task
 		$this->profiler['write']['start'] = microtime(TRUE);
-		
+
 		// Create the preamble
 		if ($this->has_dicom_preamble)
 		{
@@ -993,19 +993,19 @@ abstract class Nanodicom_Core {
 				$buffer .= 0x0;
 			}
 		}
-		
+
 		// Add the DICM.
 		$buffer .= 'DICM';
-		
+
 		// Sort the keys
 		ksort($this->_dataset);
-		
+
 		// Iterate through the current elements
 		foreach ($this->_dataset as $group => $elements)
-		{	
+		{
 			// Sort the elements
 			ksort($elements);
-			
+
 			// Through groups
 			foreach ($elements as $element => $indexes)
 			{
@@ -1019,23 +1019,23 @@ abstract class Nanodicom_Core {
 			}
 			unset($group, $elements);
 		}
-		
+
 		switch (trim($this->_transfer_syntax))
 		{
 			// deflated DICOM Data Set
 			case self::DEFLATE_TRANSFER_SYNTAX:
-				$metadata_length = (isset($this->_dataset[self::METADATA_GROUP][self::GROUP_LENGTH])) 
+				$metadata_length = (isset($this->_dataset[self::METADATA_GROUP][self::GROUP_LENGTH]))
 								 // The 12 bytes are for the Metadata Group Length element itself
-								 ? $this->_dataset[self::METADATA_GROUP][self::GROUP_LENGTH][0]['off'] 
-								   + $this->_dataset[self::METADATA_GROUP][self::GROUP_LENGTH][0]['val'] + 12 
+								 ? $this->_dataset[self::METADATA_GROUP][self::GROUP_LENGTH][0]['off']
+								   + $this->_dataset[self::METADATA_GROUP][self::GROUP_LENGTH][0]['val'] + 12
 								 : 0;
 				$buffer = substr($buffer, 0, $metadata_length).gzdeflate(substr($buffer, $metadata_length));
 			break;
 		}
-		
+
 		// Finish the profiling
 		$this->profiler['write']['end'] = microtime(TRUE);
-		
+
 		// Return buffer
 		return $buffer;
 	}
@@ -1065,10 +1065,10 @@ abstract class Nanodicom_Core {
 			}
 		}
 		$this->_vr_reading_list = $list;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Dummy function to be used instead of other time consuming functions.
 	 *
@@ -1082,7 +1082,7 @@ abstract class Nanodicom_Core {
 	protected function _dummy($arg1 = NULL, $arg2 = NULL, $arg3 = NULL, $arg4 = NULL, $arg5 = NULL)
 	{
 	}
-	
+
 	/**
 	 * Updates the group length value if exists
 	 *
@@ -1099,7 +1099,7 @@ abstract class Nanodicom_Core {
 			{
 				foreach ($group_elements as $index => $values)
 				{
-					if ($element == self::GROUP_LENGTH) 
+					if ($element == self::GROUP_LENGTH)
 						continue;
 					$length += $values['len'] + 8;
 				}
@@ -1134,18 +1134,18 @@ abstract class Nanodicom_Core {
 		// If nothing was passed return to continue parsing.
 		if (empty($this->_vr_reading_list))
 			return FALSE;
-			
+
 		if (in_array(sprintf('0x%04X',$group).'.'.sprintf('0x%04X',$element), $this->_vr_reading_list)
-			OR (isset(Nanodicom_Dictionary::$dict[$group][$element]) 
+			OR (isset(Nanodicom_Dictionary::$dict[$group][$element])
 				AND in_array(Nanodicom_Dictionary::$dict[$group][$element][2], $this->_vr_reading_list)))
 		{
 			// Element is in list
 			$this->_counted_elements++;
 		}
-		
+
 		return ($this->_counted_elements == count($this->_vr_reading_list)) ? TRUE : FALSE;
 	}
-	
+
 	/**
 	 * Check that proper endian is used
 	 *
@@ -1165,7 +1165,7 @@ abstract class Nanodicom_Core {
 			$this->_found_group_8 = TRUE;
 			// From now on, call _check_proper_endian_same function instead.
 			$this->_check_proper_endian_function = '_check_proper_endian_same';
-			
+
 			if ($group > self::GROUP_8)
 			{
 				// Group is bigger than 8
@@ -1183,10 +1183,10 @@ abstract class Nanodicom_Core {
 				// It is equal to 8
 			}
 		}
-		
+
 		return array($group, $endian);
 	}
-	
+
 	/**
 	 * Returns the same values passed
 	 *
@@ -1225,14 +1225,14 @@ abstract class Nanodicom_Core {
 			// - Private Data Element. TODO: Check if it is "odd" group.
 			// - New Data Element not updated in Dictionary. Should be in the case of "even" groups.
 			list($value_representation, $multiplicity, $name) = self::$default_dictionary;
-		
-			$value_representation = ( ! in_array($vr, array('', 'UN')) AND array_key_exists($vr, self::$vr_array)) 
+
+			$value_representation = ( ! in_array($vr, array('', 'UN')) AND array_key_exists($vr, self::$vr_array))
 				// 2) If current VR is valid VR and not UN or empty, then set as current vr (Explicit mode)
 				? $vr
 				// 3) If length is undefined, most likely it is a sequence,
 				// 4) Otherwise is it the default VR ('UN')
 				: (($length == self::UNDEFINED_LENGTH) ? self::SEQUENCE_VR : $value_representation);
-		}	
+		}
 		return array($value_representation, $multiplicity, $name);
 	}
 
@@ -1246,14 +1246,14 @@ abstract class Nanodicom_Core {
 	{
 		// Profile this task
 		$this->profiler['parse']['start'] = microtime(TRUE);
-		
+
 		// Instantiate the status to Failure
 		$this->status = self::FAILURE;
 
 		if ($check_preamble_only)
 		{
 			// Try reading only first 128 bytes + 4 of DICM
-			try 
+			try
 			{
 				$this->_read_file(0, 132);
 			}
@@ -1266,7 +1266,7 @@ abstract class Nanodicom_Core {
 		else
 		{
 			// Try reading whole file
-			try 
+			try
 			{
 				$this->_read_file();
 			}
@@ -1276,11 +1276,11 @@ abstract class Nanodicom_Core {
 				return $this;
 			}
 		}
-		
+
 		// Following 2 calls need to be wrapped in a try/catch to avoid throwing exceptions
-		try 
+		try
 		{
-			// Test for NEMA or DICOM file.  
+			// Test for NEMA or DICOM file.
 			$this->_preamble  = $this->_read(128);
 		}
 		catch (Nanodicom_Exception $e)
@@ -1289,7 +1289,7 @@ abstract class Nanodicom_Core {
 			return $this;
 		}
 
-		try 
+		try
 		{
 			// Test to see if has preamble
 			$this->has_dicom_preamble  = (bool) ($this->_read(4) == 'DICM');
@@ -1301,7 +1301,7 @@ abstract class Nanodicom_Core {
 		}
 
 		// If checking only for DICOM preamble. Return current object
-		if ($check_preamble_only) 
+		if ($check_preamble_only)
 			return $this;
 
 		// Continue with the rest
@@ -1316,7 +1316,7 @@ abstract class Nanodicom_Core {
         while ($this->_read())
         {
 			// Read a new element with a try/catch block
-			try 
+			try
 			{
 				$new_element  = $this->_read_element();
 			}
@@ -1342,7 +1342,7 @@ abstract class Nanodicom_Core {
 					{
 						$this->errors[] = strtr('Meta info group length not an integer found in file :file',
 							array(':file' => $this->_location));
-						break; 
+						break;
 					}
 
 					$this->_meta_group_last_byte = $this->_current_pointer + $this->_meta_information_group_length;
@@ -1370,26 +1370,26 @@ abstract class Nanodicom_Core {
 				break;
 			}
         }
-        
+
 		unset($check_dicom_only, $new_element);
 
 		// Instance parsed, don't do it again
 		$this->_is_parsed = TRUE;
-		
+
 		// Instance successfully read if no errors found
 		if (count($this->errors) == 0)
 			$this->status = self::SUCCESS;
-		
+
 		// Finish the profiling
 		$this->profiler['parse']['end'] = microtime(TRUE);
-		
+
 		// Return the instance
         return $this;
 	}
 
 	/**
 	 * Read an element
-	 * 
+	 *
 	 * PS 3.10 Page 22 (2009)
 	 * Except for the 128 byte preamble and the 4 byte prefix, the File Meta Information shall be encoded using
 	 * the Explicit VR Little Endian Transfer Syntax (UID=1.2.840.10008.1.2.1) as defined in DICOM PS 3.5.
@@ -1416,7 +1416,7 @@ abstract class Nanodicom_Core {
 		$items					= array();
 		$value_representation	= 'UN';
 		$offset					= $this->_tell();
-		
+
 		// Get the vr_mode and endian from the Transfer Syntax
 		list($vr_mode, $endian) = ($this->_meta_group_last_byte != -1 AND $offset >= $this->_meta_group_last_byte)
 			? self::decode_transfer_syntax($this->_transfer_syntax)
@@ -1438,7 +1438,7 @@ abstract class Nanodicom_Core {
 		{
 			// It is explicit. Next value is the VR.
 			$vr = $this->_read(2);
-			
+
 			// Somehow the VR is not correct. Should we assume it is IMPLICIT?
 			if ( ! array_key_exists($vr, self::$vr_array))
 			{
@@ -1453,10 +1453,10 @@ abstract class Nanodicom_Core {
 				{
 					// VR is in list. Next 2 bytes should be 0000H (but we don't care)
 					$this->_forward(2);
-					
+
 					// Length is 32-bit unsigned integer
 					$length = $this->{self::$_read_int}(4, $endian, 4);
-		
+
 					if ($vr == 'UT')
 					{
 						// Do not allow undefined length on UT
@@ -1473,7 +1473,7 @@ abstract class Nanodicom_Core {
 				}
 			}
 		}
-		
+
 		// Read the length, this is done to allow the fallback to read Implicit when Explicit failed
 		if ($vr_mode == self::VR_MODE_IMPLICIT)
 		{
@@ -1486,11 +1486,11 @@ abstract class Nanodicom_Core {
 			throw new Nanodicom_Exception('Unexpected Undefined Length found at [:group][:element]',
 										  array(':group' => $group, ':element' => $element), 100);
 		}
-		
+
 		// Odd length. Add to warnings
 		if ($length > 0 AND $length % 2 != 0)
 			$this->warnings[] = 'Found odd length '.$length.' reading Group '.$group.' and Element '.$element;
-		
+
 		// Fast forward if length is set and not Metadata Group
 		if ($length >= 0 AND $group != self::METADATA_GROUP)
 		{
@@ -1499,16 +1499,16 @@ abstract class Nanodicom_Core {
 
 			// Add the pointer to corresponding length
 			$bytes_forwarded = $this->_forward($length);
-			
+
 			if ($bytes_forwarded != $length)
 			{
 				// Need to rewind
 				$this->_rewind(-1*$length);
 				$length = $bytes_forwarded;
 			}
-			
+
 			unset($endian, $vr_mode);
-			return array($group, $element, 
+			return array($group, $element,
 				array('len'	  => $length,
 					  'val'	  => $value,
 					  'vr'	  => $value_representation,
@@ -1525,9 +1525,9 @@ abstract class Nanodicom_Core {
 
 		// Read values
 		list($value, $value_representation, $is_binary, $items) = $this->_read_value($vr, $value_representation, $length, $vr_mode, $endian);
-				
+
 		unset($endian, $vr_mode, $multiplicity, $name, $current_pointer, $new_element);
-		return array($group, $element, 
+		return array($group, $element,
 			array('len'	  => $length,
 				  'val'	  => $value,
 				  'vr'	  => $value_representation,
@@ -1555,21 +1555,21 @@ abstract class Nanodicom_Core {
 
 		// Save current pointer
 		$current_pointer = $this->_tell();
-		
+
 		// Values have not been read
 		$this->_rewind($elem['_off']);
 
 		// Decode the right VR.
-		list($elem['vr'], $multiplicity, $name) 
+		list($elem['vr'], $multiplicity, $name)
 			= $this->_decode_vr($group, $element, $elem['_vr'], $elem['len']);
 
 		// Read the value
-		list($elem['val'], $elem['vr'], $elem['bin'], $elem['ds']) 
+		list($elem['val'], $elem['vr'], $elem['bin'], $elem['ds'])
 			= $this->_read_value($elem['_vr'], $elem['vr'], $elem['len'], $this->_transfer_syntax);
-		
+
 		// Element has been read. Set to true
 		$elem['done'] = TRUE;
-		
+
 		// Rewind to previous pointer, we just read and returned everything back to normal
 		$this->_rewind($current_pointer);
 	}
@@ -1593,7 +1593,7 @@ abstract class Nanodicom_Core {
 		$is_binary = FALSE;
 		$value	   = '';
 		$items	   = array();
-		
+
 		if ($endian == NULL)
 		{
 			// vr_mode is then transfer syntax. Get proper vr_mode and endian from the Transfer Syntax
@@ -1665,12 +1665,12 @@ abstract class Nanodicom_Core {
 							// Setting the parent VR as OB, OW or OX, so Items know they should
 							// treat value as data not data sets
 							$this->_parent_vr = $value_representation;
-							
+
 							// Read next element
 							$new_element = $this->_read_element();
 							$items[$new_element[0]][$new_element[1]][] = $new_element[2];
 							// Check for Items Group or Delimeters
-							if ($new_element[0] == Nanodicom::ITEMS_GROUP 
+							if ($new_element[0] == Nanodicom::ITEMS_GROUP
 								AND in_array($new_element[1], array(Nanodicom::ITEM_DELIMITER, Nanodicom::SEQUENCE_DELIMITER)))  break;
 						}
 					break;
@@ -1692,7 +1692,7 @@ abstract class Nanodicom_Core {
 					break;
 					case self::UNDEFINED_LENGTH:
 						// The Element has an undefined length. Should terminate with a {Sequence|Item} Delimitation Item
-						
+
 						while ($this->_read())
 						{
 							// Let's iterate
@@ -1703,13 +1703,13 @@ abstract class Nanodicom_Core {
 							$new_element = $this->_read_element();
 							$items[$new_element[0]][$new_element[1]][] = $new_element[2];
 							// Check for Items Group or Delimeters
-							if ($new_element[0] == Nanodicom::ITEMS_GROUP 
+							if ($new_element[0] == Nanodicom::ITEMS_GROUP
 								AND in_array($new_element[1], array(Nanodicom::ITEM_DELIMITER, Nanodicom::SEQUENCE_DELIMITER)))  break;
 						}
 					break;
 					default:
 						// The length is fixed.
-						
+
 						// Let's check if parent was a binary VR
 						if (in_array($this->_parent_vr, array('OB', 'OW', 'OX')))
 						{
@@ -1720,10 +1720,10 @@ abstract class Nanodicom_Core {
 						else
 						{
 							// It is an Item from a Sequence. We should read the embedded Data Sets
-							
+
 							// Get current pointer in blob;
 							$current_pointer = $this->_tell();
-							
+
 							// Iterate while file has contents and current pointer is less than given length
 							while ($this->_read() AND ($this->_tell() < $current_pointer + $length))
 							{
@@ -1736,7 +1736,7 @@ abstract class Nanodicom_Core {
 					break;
 				}
 			break;
-			default: 
+			default:
 				switch ($length)
 				{
 					case 0:
@@ -1747,16 +1747,16 @@ abstract class Nanodicom_Core {
 						while ($this->_read())
 						{
 							// Let's iterate
-							
+
 							// Setting the parent VR as OB, OW or OX, so Items know they should
 							// treat value as data not data sets
 							$this->_parent_vr = $value_representation;
-							
+
 							// Read next element
 							$new_element = $this->_read_element();
 							$items[$new_element[0]][$new_element[1]][] = $new_element[2];
 							// Check for Items Group or Delimeters
-							if ($new_element[0] == Nanodicom::ITEMS_GROUP 
+							if ($new_element[0] == Nanodicom::ITEMS_GROUP
 								AND in_array($new_element[1], array(Nanodicom::ITEM_DELIMITER, Nanodicom::SEQUENCE_DELIMITER)))  break;
 						}
 					break;
@@ -1769,7 +1769,7 @@ abstract class Nanodicom_Core {
 		}
 		return array($value, $value_representation, $is_binary, $items);
 	}
-	
+
 	/**
 	 * Creates a binary string from the current dataset
 	 *
@@ -1782,12 +1782,12 @@ abstract class Nanodicom_Core {
 	{
 		// Empty buffer
 		$buffer = '';
-		
+
 		// Get the vr_mode (Implicit or Explicit) and the endian (Little or Big)
 		list($vr_mode, $endian) = (($group == self::METADATA_GROUP)
 								? self::decode_transfer_syntax(self::EXPLICIT_VR_LITTLE_ENDIAN)
 								: self::decode_transfer_syntax($this->_transfer_syntax));
-		
+
 		// Add the group and element
 		$buffer .= $this->{self::$_write_int}($group, 2, $endian, 2);
 		$buffer .= $this->{self::$_write_int}($element, 2, $endian, 2);
@@ -1798,15 +1798,15 @@ abstract class Nanodicom_Core {
 				 : $vr_mode;
 
 		// Read data if it has been not done
-		if ( ! isset($data['done'])) 
+		if ( ! isset($data['done']))
 		{
 			// Values have not been read
 			$this->_read_value_from_blob($data, $group, $element);
 		}
-		
+
 		$bytes = 4;
 		$vr_index = ($data['vr'] != $data['_vr'] AND ! empty($data['_vr'])) ? '_vr' : 'vr';
-		
+
 		if ($vr_mode == self::VR_MODE_EXPLICIT OR $group == self::METADATA_GROUP)
 		{
 			// For Explicit or Metadata Group
@@ -1820,10 +1820,10 @@ abstract class Nanodicom_Core {
 				$bytes  = 2;
 			}
 		}
-		
+
 		// Setting the length
 		$buffer .= $this->{self::$_write_int}($data['len'], $bytes, $endian, $bytes);
-		
+
 		// Setting the value
 		// TODO: Encode AT properly
 		switch ($data[$vr_index])
@@ -1874,13 +1874,13 @@ abstract class Nanodicom_Core {
 
 						// Sort the keys
 						ksort($data['ds']);
-		
+
 						// Iterate through the current elements
 						foreach ($data['ds'] as $ds_group => $ds_elements)
-						{	
+						{
 							// Sort the elements
 							ksort($ds_elements);
-							
+
 							// Through groups
 							foreach ($ds_elements as $ds_element => $ds_indexes)
 							{
@@ -1922,7 +1922,7 @@ abstract class Nanodicom_Core {
 
 						// Iterate through the current elements
 						foreach ($data['ds'] as $ds_group => $ds_elements)
-						{	
+						{
 							// Sort the elements
 							ksort($ds_elements);
 
@@ -1960,7 +1960,7 @@ abstract class Nanodicom_Core {
 
 							// Iterate through the current elements
 							foreach ($data['ds'] as $ds_group => $ds_elements)
-							{	
+							{
 								// Sort the elements
 								ksort($ds_elements);
 
@@ -1994,7 +1994,7 @@ abstract class Nanodicom_Core {
 				$buffer .= $data['val'];
 			break;
 		}
-		
+
 		return $buffer;
 	}
 
@@ -2018,13 +2018,13 @@ abstract class Nanodicom_Core {
 			// It is a single value. Check and return. 2147483647 = 2^31 - 1;
 			return ($values > 2147483647) ? -1 : $values;
 		}
-		
+
 		// Is array, check its values and change accordingly
 		for($i = 1, $count = count($values); $i <= $count; $i++)
 		{
-			$values['val'.$i] = ($values['val'.$i] > 2147483647) ? -1 : $values['val'.$i];			
+			$values['val'.$i] = ($values['val'.$i] > 2147483647) ? -1 : $values['val'.$i];
 		}
-		
+
 		return $values;
 	}
 
@@ -2042,7 +2042,7 @@ abstract class Nanodicom_Core {
 	{
 		// In case the file said 0 for the length?
 		// TODO: Raise a warning
-		
+
 		// Get the right format
 		$format = ($sign == self::SIGNED)
 				? (($bytes == 2) ? 's' : (($bytes == 4) ? 'l' : 'c'))
@@ -2059,7 +2059,7 @@ abstract class Nanodicom_Core {
 		// Return either a value or an array
 		return ($length == $bytes) ? $values['val'] : $values;
 	}
-	
+
 	/**
 	 * Writes an integer for 64-bit machines. Uses 32-bit function
 	 *
@@ -2076,10 +2076,10 @@ abstract class Nanodicom_Core {
 		{
 			return ($bytes == 2) ? chr(0xFF).chr(0xFF) : chr(0xFF).chr(0xFF).chr(0xFF).chr(0xFF);
 		}
-		
+
 		return $this->_write_int_32($value, $bytes, $endian, $length, $sign);
 	}
-	
+
 	/**
 	 * Writes an integer for 32-bit machines.
 	 *
@@ -2093,7 +2093,7 @@ abstract class Nanodicom_Core {
 	protected function _write_int_32($value, $bytes, $endian, $length, $sign = self::UNSIGNED)
 	{
 		if ($length == 0) return '';
-		
+
 		$format = ($sign == self::SIGNED)
 				? (($bytes == 2) ? 's' : 'l')
 				: (($bytes == 2) ? (($endian == self::BIG_ENDIAN) ? 'n' : 'v' ) : (($endian == self::BIG_ENDIAN) ? 'N' : 'V'));
@@ -2112,7 +2112,7 @@ abstract class Nanodicom_Core {
 			return pack($format, $value);
 		}
 	}
-	
+
 	/**
 	 * Reads a float
 	 *
@@ -2133,7 +2133,7 @@ abstract class Nanodicom_Core {
 		$values = unpack($format, $buffer);
 
 		unset ($format, $buffer);
-		
+
 		return ($length == $bytes) ? $values['val'] : $values;
 	}
 
@@ -2206,7 +2206,7 @@ abstract class Nanodicom_Core {
 			{
 				$missing_bytes = $offset - $this->_file_length;
 				throw new Nanodicom_Exception('End of file :file has been reached. File size is :filesize, failed to allocate :missing bytes at byte :byte'
-										  , array(':file' => $this->_location, ':filesize' => $this->_file_length, 
+										  , array(':file' => $this->_location, ':filesize' => $this->_file_length,
 												  ':missing' => $missing_bytes, ':byte' => sprintf('0x%04X',$this->_current_pointer)), 3);
 			}
 			else
@@ -2215,9 +2215,9 @@ abstract class Nanodicom_Core {
 				$this->warnings[] = 'Retry file overflow while forwarding file pointer';
 				$this->_oversize_retries++;
 				$increment = 0;
-			}	
+			}
 		}
-	
+
 		// Otherwise is fine to add the offest to current_pointer
 		$this->_current_pointer = $offset;
 		return $increment;
@@ -2232,7 +2232,7 @@ abstract class Nanodicom_Core {
 	{
 		return $this->_current_pointer;
 	}
-	
+
 	/**
 	 * Read file or blob accordingly
 	 *
@@ -2247,13 +2247,13 @@ abstract class Nanodicom_Core {
 		if ($this->_location == 'blob')
 		{
 			// There is no filename, it is a blob
-			
+
 			// Read the lenght of the blob
 			$this->_file_length = sprintf('%u', strlen($this->_blob));
 
 			// Define the number of bytes to read
 			$length = ($length === NULL) ? $this->_file_length : $length;
-			
+
 			// Read the whole file
 			$this->_blob = substr($this->_blob, $starting_byte, $length);
 
@@ -2262,9 +2262,9 @@ abstract class Nanodicom_Core {
 		else
 		{
 			// It is a file
-			
+
 			// Checking if file exists
-			if ( ! (file_exists($this->_location) AND is_file($this->_location))) 
+			if ( ! (file_exists($this->_location) AND is_file($this->_location)))
 				throw new Nanodicom_Exception('File :file does not exist', array(':file' => $this->_location), 0);
 
 			// Opening handler for reading
@@ -2273,17 +2273,17 @@ abstract class Nanodicom_Core {
 			// Checking if file can be opened
 			if ( ! $file_handle)
 				throw new Nanodicom_Exception('File :file cannot be opened', array(':file' => $this->_location), 1);
-			
+
 			// Safely read long file values
 			$this->_file_length = sprintf('%u', filesize($this->_location));
 
 			// Set the file position if needed
 			if ($starting_byte != 0)
 				fseek($file_handle, $starting_byte);
-			
+
 			// Define the number of bytes to read
 			$length = ($length === NULL) ? $this->_file_length : $length;
-			
+
 			if ($length <= 0)
 				throw new Nanodicom_Exception('Length :length found at file :file at byte :byte',
 					array(':length' => $length, ':file' => $this->_location, ':byte' => sprintf('0x%04X',$starting_byte)), 2);
@@ -2305,7 +2305,7 @@ abstract class Nanodicom_Core {
 			unset($file_handle, $length, $starting_byte);
 		}
 	}
-	
+
 	/**
 	 * Reads specified number of bytes from blob, or checks if there is still data
 	 * left to be read
@@ -2324,23 +2324,23 @@ abstract class Nanodicom_Core {
 
 		// Inflating a deflated DICOM Data Set
 		$this->{$this->_check_deflate_function}();
-		
+
 		// Save the current pointer location as starting byte
 		$starting_byte = $this->_current_pointer;
 		// Increase the reading pointer
 		$this->_current_pointer += $length;
-		
+
 		if ($this->_current_pointer > $this->_file_length)
 		{
 			$missing_bytes	  = $this->_current_pointer - $this->_file_length;
 			throw new Nanodicom_Exception('End of file :file has been reached. File size is :filesize, failed to allocate :missing bytes at byte :byte'
-									  , array(':file' => $this->_location, ':filesize' => $this->_file_length, 
+									  , array(':file' => $this->_location, ':filesize' => $this->_file_length,
 											  ':missing' => $missing_bytes, ':byte' => sprintf('0x%04X',$starting_byte)), 3);
 		}
-		
+
 		if ($this->_current_pointer < 0)
 			throw new Nanodicom_Exception('Trying to read negative bytes on file :file', array(':file' => $this->_location), 4);
-		
+
 		// Return the bytes requested
 		return substr($this->_blob, $starting_byte, $length);
 	}
@@ -2357,5 +2357,5 @@ abstract class Nanodicom_Core {
 			$this->_check_deflate_function = '_dummy';
 		}
 	}
-	
+
 } // End Nanodicom

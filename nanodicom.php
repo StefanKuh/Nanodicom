@@ -16,6 +16,7 @@ define('NANODICOMCOREPATH', realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR.'nan
 
 // Require the core class
 require_once NANODICOMCOREPATH.'core.php';
+require_once NANODICOMCOREPATH.'dictionary.php';
 
 /**
  * abstract Nanodicom class.
