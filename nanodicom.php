@@ -30,3 +30,4 @@ require_once NANODICOMCOREPATH.'dictionary.php';
  * @license    http://www.opensource.org/licenses/mit-license.php MIT-license
  */
 abstract class Nanodicom extends Nanodicom_Core {}
+class DicomDictionary extends Nanodicom_Dictionary {};
