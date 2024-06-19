@@ -383,6 +383,11 @@ abstract class Nanodicom_Core {
 		return $this;
 	}
 
+    public function dataset(): Array
+    {
+        return $this->_dataset;
+    }
+
 	/**
 	 * Magic method to call an undefined method. It will look for methods on children
 	 * Performance is better when called directly
